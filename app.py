@@ -947,35 +947,87 @@ elif page == "🔍 Feature Insights":
     ]
 
 
-    selected_feature = st.selectbox(
-        "Select a categorical feature",
-        categorical_columns
+    # =========================================================
+# FEATURE INSIGHTS
+# =========================================================
+
+elif page == "🔍 Feature Insights":
+
+    st.title("🔍 Feature Insights")
+    st.write(
+        "Explore how different student-related features are associated "
+        "with average Exam Score."
     )
 
+    # Numeric feature correlations
+    st.subheader("📈 Numeric Feature Correlation")
 
-    category_analysis = (
-        valid_dataset
-        .groupby(selected_feature)[
-            "Exam_Score"
-        ]
-        .mean()
-        .sort_values(
-            ascending=False
-        )
+    numeric_correlation = (
+        analysis_df[numeric_features + ["Exam_Score"]]
+        .corr()["Exam_Score"]
+        .drop("Exam_Score")
+        .sort_values(ascending=False)
     )
-
-
-    st.bar_chart(
-        category_analysis
-    )
-
 
     st.dataframe(
-        category_analysis.to_frame(
-            "Average Exam Score"
-        ),
+        numeric_correlation.to_frame("Correlation"),
         use_container_width=True
     )
+
+    # Strongest positive relationship
+    strongest_feature = numeric_correlation.idxmax()
+    strongest_value = numeric_correlation.max()
+
+    st.info(
+        f"Strongest positive numeric relationship: "
+        f"**{strongest_feature}** "
+        f"(correlation = {strongest_value:.3f})"
+    )
+
+    st.warning(
+        "Correlation shows association, not causation. "
+        "It also should not be treated as model feature importance."
+    )
+
+    # ---------------------------------------------------------
+    # Categorical Feature Analysis
+    # ---------------------------------------------------------
+
+    st.subheader("📊 Categorical Feature Analysis")
+
+    selected_feature = st.selectbox(
+        "Select a categorical feature",
+        categorical_features
+    )
+
+    # Safety check
+    if selected_feature is not None and selected_feature in analysis_df.columns:
+
+        group_data = (
+            analysis_df.groupby(selected_feature)["Exam_Score"]
+            .mean()
+            .reset_index()
+            .sort_values("Exam_Score", ascending=False)
+        )
+
+        group_data["Exam_Score"] = group_data["Exam_Score"].round(2)
+
+        st.write(
+            f"Average Exam Score by **{selected_feature}**"
+        )
+
+        st.dataframe(
+            group_data,
+            use_container_width=True
+        )
+
+        st.bar_chart(
+            group_data.set_index(selected_feature)["Exam_Score"]
+        )
+
+    else:
+
+        st.info("Please select a categorical feature.")
 
 
 # ============================================================
